@@ -1,13 +1,11 @@
 package me.product.server;
 
 import me.product.api.Product;
-import me.product.api.ProductResponse;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * Memory implementation of ProductService.
@@ -51,5 +49,11 @@ public class ProductServiceMap implements ProductService
         productMap.put(key, added);
 
         return added;
+    }
+
+    @Override
+    public ImmutableProduct findProductById(int id)
+    {
+        return productMap.get(id);
     }
 }

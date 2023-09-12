@@ -24,4 +24,12 @@ public interface ProductService
      * @throws ProductException in case of error.
      */
     ImmutableProduct addProduct(Product product) throws ProductException;
+
+    /**
+     * Searches for a product by its id, returning null if not found.
+     *
+     * @param id the product id.
+     * @return the product if known, null otherwise.
+     */
+    ImmutableProduct findProductById(int id);
 }

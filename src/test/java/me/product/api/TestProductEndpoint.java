@@ -2,7 +2,6 @@ package me.product.api;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -13,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -105,5 +105,51 @@ public class TestProductEndpoint
         assertThat(returned.getProductName(), is(productName));
         assertThat(returned.getPriceCents(), is(priceCents));
         assertThat(returned.getId(), is(greaterThan(0)));
+    }
+
+    @Test
+    public void testRequestSale() throws IOException, InterruptedException, URISyntaxException
+    {
+        SalesRecord salesRecord =
+                createSalesRequest(
+                        LineItem.request(1, 1),
+                        LineItem.request(2, 2),
+                        LineItem.request(3, 4));
+
+        String body = new Gson().toJson(salesRecord);
+
+        HttpRequest request =
+                HttpRequest.newBuilder(new URI(BASE_URI + "/sales"))
+                        .timeout(Duration.ofSeconds(10))
+                        .header("Accept", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build();
+
+        HttpResponse<String> response =
+                HttpClient.newHttpClient()
+                        .send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Possible 201 if a new endpoint URI is created, but not for sales
+        assertThat(response.statusCode(), is(200));
+
+        ProductResponse productResponse = readProductResponse(response);
+        assertThat(productResponse.isSuccess(), is(true));
+        assertThat(productResponse.getData(),is(notNullValue()));
+
+        SalesRecord result = new Gson().fromJson(productResponse.getData(), SalesRecord.class);
+        for (LineItem item: result.getLineItems())
+        {
+            System.out.println("   " + item);
+        }
+        System.out.println("   " + result.getTotalCents());
+    }
+
+    private SalesRecord createSalesRequest(LineItem... items)
+    {
+        SalesRecord salesRecord = new SalesRecord();
+        List<LineItem> itemList = new ArrayList<>();
+        Collections.addAll(itemList, items);
+        salesRecord.setLineItems(itemList);
+        return salesRecord;
     }
 }

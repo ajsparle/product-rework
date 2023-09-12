@@ -1,9 +1,8 @@
 package me.product.api;
 
 import lombok.Data;
-import me.product.server.LineItem;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Record of a sale used across the API in both directions as a request and response.
@@ -15,10 +14,10 @@ public class SalesRecord
     /**
      * List of line items.
      */
-    private ArrayList<LineItem> lineItems;
+    private List<LineItem> lineItems;
 
     /**
      * Sale total.
      */
-    private int totalCents;
+    private Integer totalCents;
 }
