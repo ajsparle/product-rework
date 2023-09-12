@@ -14,9 +14,28 @@ import spark.Spark;
  */
 public class ProductEndpoint
 {
+    private final ProductService productService;
+
     public static void main(String[] args) throws ProductException
     {
         ProductService productService = new ProductServiceMap();
+
+        ProductEndpoint productEndpoint = new ProductEndpoint(productService);
+        productEndpoint.initialiseApi();
+    }
+
+    /**
+     * Create an endpoint using the supplied product service.
+     *
+     * @param productService the product service.
+     */
+    public ProductEndpoint(ProductService productService)
+    {
+        this.productService = productService;
+    }
+
+    public void initialiseApi()
+    {
 
         Spark.get("/products", (request, response) ->
         {
@@ -33,12 +52,7 @@ public class ProductEndpoint
             response.type("application/json");
             try
             {
-                Product product = new Gson().fromJson(request.body(), Product.class);
-                ImmutableProduct added = productService.addProduct(product);
-
-                JsonArray data = new JsonArray();
-                data.add(new Gson().toJsonTree(added.asProduct()));
-                return new Gson().toJson(new ProductResponse(true, null, data));
+                return addProduct(request.body());
             }
             catch (ProductException e)
             {
@@ -50,31 +64,7 @@ public class ProductEndpoint
             response.type("application/json");
             try
             {
-                SalesRecord salesRequest = new Gson().fromJson(request.body(), SalesRecord.class);
-
-                int totalCents = 0;
-                for (LineItem item : salesRequest.getLineItems())
-                {
-                    if (item.getQuantity() < 1)
-                    {
-                        throw new ProductException("Invalid quantity: " + item.getQuantity());
-                    }
-                    ImmutableProduct product = productService.findProductById(item.getId());
-                    if (product == null)
-                    {
-                        throw new ProductException("No such product: " + item.getId());
-                    }
-
-                    int itemCents = item.getQuantity() * product.getPriceCents();
-                    item.setTotalCents(itemCents);
-                    totalCents += itemCents;
-                }
-
-                salesRequest.setTotalCents(totalCents);
-
-                JsonElement data = new Gson().toJsonTree(salesRequest);
-
-                return new Gson().toJson(new ProductResponse(true, null, data));
+                return generateSale(request.body());
             }
             catch (ProductException e)
             {
@@ -83,7 +73,47 @@ public class ProductEndpoint
         }));
     }
 
-    private static String generateProductResponse(boolean success, String message, JsonElement data)
+    private String addProduct(String request) throws ProductException
+    {
+        Product product = new Gson().fromJson(request, Product.class);
+        ImmutableProduct added = productService.addProduct(product);
+
+        JsonArray data = new JsonArray();
+        data.add(new Gson().toJsonTree(added.asProduct()));
+        return new Gson().toJson(new ProductResponse(true, null, data));
+    }
+
+    private String generateSale(String request) throws ProductException
+    {
+        SalesRecord salesRequest = new Gson().fromJson(request, SalesRecord.class);
+
+        int totalCents = 0;
+        for (LineItem item : salesRequest.getLineItems())
+        {
+            if (item.getQuantity() < 1)
+            {
+                throw new ProductException("Invalid quantity: " + item.getQuantity());
+            }
+            ImmutableProduct product = productService.findProductById(item.getId());
+            if (product == null)
+            {
+                throw new ProductException("No such product: " + item.getId());
+            }
+
+            int itemCents = item.getQuantity() * product.getPriceCents();
+            item.setTotalCents(itemCents);
+            totalCents += itemCents;
+        }
+
+        salesRequest.setTotalCents(totalCents);
+
+        JsonElement data = new Gson().toJsonTree(salesRequest);
+
+        return new Gson().toJson(new ProductResponse(true, null, data));
+
+    }
+
+    private String generateProductResponse(boolean success, String message, JsonElement data)
     {
         return new Gson().toJson(new ProductResponse(success, message, data));
     }
