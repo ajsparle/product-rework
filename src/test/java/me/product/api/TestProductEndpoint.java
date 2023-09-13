@@ -37,7 +37,6 @@ public class TestProductEndpoint
                         .send(request, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode(), is(200));
-        //System.out.println(response.body());
 
         ProductResponse productResponse = readProductResponse(response);
         System.out.println(productResponse);
@@ -68,6 +67,9 @@ public class TestProductEndpoint
     @Test
     public void testAddProduct() throws URISyntaxException, IOException, InterruptedException
     {
+//        addProduct("Chrome Toaster", 100_00)
+//        addProduct("Copper Kettle", 49_00)
+//        addProduct("Mixing Bowl", 20_00)
         addProduct("Foo", 13);
         addProduct("Bar", 1_000_00);
     }
@@ -135,10 +137,10 @@ public class TestProductEndpoint
 
         ProductResponse productResponse = readProductResponse(response);
         assertThat(productResponse.isSuccess(), is(true));
-        assertThat(productResponse.getData(),is(notNullValue()));
+        assertThat(productResponse.getData(), is(notNullValue()));
 
         SalesRecord result = new Gson().fromJson(productResponse.getData(), SalesRecord.class);
-        for (LineItem item: result.getLineItems())
+        for (LineItem item : result.getLineItems())
         {
             System.out.println("   " + item);
         }
