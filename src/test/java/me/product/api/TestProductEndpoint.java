@@ -115,6 +115,7 @@ public class TestProductEndpoint
                         LineItem.request(1, 1),
                         LineItem.request(2, 2),
                         LineItem.request(3, 4));
+        salesRecord.setDiscountCents(10_00);
 
         String body = new Gson().toJson(salesRecord);
 
@@ -141,7 +142,8 @@ public class TestProductEndpoint
         {
             System.out.println("   " + item);
         }
-        System.out.println("   " + result.getTotalCents());
+        System.out.println("Total cents = " + result.getTotalCents());
+        System.out.println("Discount    = " + result.getDiscountCents());
     }
 
     private SalesRecord createSalesRequest(LineItem... items)

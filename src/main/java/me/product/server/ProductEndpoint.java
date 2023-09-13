@@ -7,6 +7,8 @@ import me.product.api.LineItem;
 import me.product.api.Product;
 import me.product.api.ProductResponse;
 import me.product.api.SalesRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Spark;
 
 /**
@@ -14,6 +16,8 @@ import spark.Spark;
  */
 public class ProductEndpoint
 {
+    private static final Logger logger = LoggerFactory.getLogger("ProductEndpoint");
+
     private final ProductService productService;
 
     public static void main(String[] args) throws ProductException
@@ -77,6 +81,7 @@ public class ProductEndpoint
     {
         Product product = new Gson().fromJson(request, Product.class);
         ImmutableProduct added = productService.addProduct(product);
+        logger.info("Added product " + product);
 
         JsonArray data = new JsonArray();
         data.add(new Gson().toJsonTree(added.asProduct()));
@@ -106,6 +111,52 @@ public class ProductEndpoint
         }
 
         salesRequest.setTotalCents(totalCents);
+
+        // check for discount
+        int discountCents = salesRequest.getDiscountCents();
+        if (discountCents < 0)
+        {
+            throw new ProductException("Invalid discount");
+        }
+        if (discountCents > totalCents)
+        {
+            throw new ProductException("Discount exceeds total");
+        }
+
+        while (discountCents > 0)
+        {
+            logger.info("Discounting " + discountCents);
+            // apply discount iteratively until none left or no change in loop
+            double ratio = (double) discountCents / totalCents;
+            int updateTotal = totalCents;
+            int updateDiscount = discountCents;
+            for (LineItem item : salesRequest.getLineItems())
+            {
+                if (item.getTotalCents() > 0)
+                {
+                    int itemDiscount = (int) Math.floor(item.getTotalCents() * ratio);
+                    if (itemDiscount > 0)
+                    {
+                        item.setTotalCents(item.getTotalCents() - itemDiscount);
+                        updateTotal -= itemDiscount;
+                        updateDiscount -= itemDiscount;
+                    }
+                }
+            }
+
+            if (updateTotal == totalCents)
+            {
+                // no update
+                logger.info("Discount loop terminated, remaining " + updateDiscount);
+                break;
+            }
+
+            totalCents = updateTotal;
+            discountCents = updateDiscount;
+        }
+
+        salesRequest.setTotalCents(totalCents);
+        salesRequest.setDiscountCents(discountCents);
 
         JsonElement data = new Gson().toJsonTree(salesRequest);
 

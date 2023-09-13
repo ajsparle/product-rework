@@ -12,12 +12,17 @@ import java.util.List;
 public class SalesRecord
 {
     /**
-     * List of line items.
+     * List of line items (input).
      */
     private List<LineItem> lineItems;
 
     /**
-     * Sale total.
+     * Sale total (output).
      */
     private Integer totalCents;
+
+    /**
+     * Discount to be applied (input).
+     */
+    private int discountCents;
 }
